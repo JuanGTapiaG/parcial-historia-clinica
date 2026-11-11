@@ -2,3 +2,4 @@ Fase 1: Análisis, UML y diseño - completada
 Fase 2: Datos distribuidos y FHIR - completada
 Fase 3: HSB / Middleware - completada
 Fase 4: Seguridad, resiliencia y despliegue - completada
+Fase 5: Prototipo final y sustentación - completada
