@@ -1,0 +1,72 @@
+{
+  "realm": "historia-clinica",
+  "enabled": true,
+  "registrationAllowed": false,
+  "roles": {
+    "realm": [
+      {"name": "paciente", "description": "Paciente - solo su historia"},
+      {"name": "admisionista", "description": "Admisión y triage"},
+      {"name": "medico", "description": "Profesional de salud"},
+      {"name": "auditor", "description": "Auditor de HC"}
+    ]
+  },
+  "users": [
+    {
+      "username": "paciente1",
+      "enabled": true,
+      "email": "paciente1@test.com",
+      "firstName": "Paciente",
+      "lastName": "Uno",
+      "credentials": [{"type": "password", "value": "paciente123", "temporary": false}],
+      "realmRoles": ["paciente"]
+    },
+    {
+      "username": "admision1",
+      "enabled": true,
+      "email": "admision1@test.com",
+      "firstName": "Admision",
+      "lastName": "Uno",
+      "credentials": [{"type": "password", "value": "admision123", "temporary": false}],
+      "realmRoles": ["admisionista"]
+    },
+    {
+      "username": "medico1",
+      "enabled": true,
+      "email": "medico1@test.com",
+      "firstName": "Medico",
+      "lastName": "Uno",
+      "credentials": [{"type": "password", "value": "medico123", "temporary": false}],
+      "realmRoles": ["medico"]
+    },
+    {
+      "username": "auditor1",
+      "enabled": true,
+      "email": "auditor1@test.com",
+      "firstName": "Auditor",
+      "lastName": "Uno",
+      "credentials": [{"type": "password", "value": "auditor123", "temporary": false}],
+      "realmRoles": ["auditor"]
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "bus",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "bus-secret",
+      "serviceAccountsEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "redirectUris": ["*"],
+      "webOrigins": ["*"]
+    },
+    {
+      "clientId": "frontend",
+      "enabled": true,
+      "publicClient": true,
+      "directAccessGrantsEnabled": true,
+      "redirectUris": ["*"],
+      "webOrigins": ["*"]
+    }
+  ]
+}
+

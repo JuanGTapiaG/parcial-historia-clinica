@@ -1,109 +1,76 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Historia Clínica Distribuida | 3 Nodos</title>
-    <link rel="stylesheet" href="styles.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Historia Clínica Distribuida</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/keycloak-js@24.0.0/dist/keycloak.min.js"></script>
 </head>
 <body>
-    <div class="header">
-        <h1>🏥 Historia Clínica Distribuida</h1>
-        <div class="nodo-selector">
-            <label>🌍 Nodo Activo:</label>
-            <select id="nodoSelector">
-                <option value="balanceado">⚖️ Balanceado (Round Robin)</option>
-                <option value="sincelejo">🏙️ Sincelejo (Costa)</option>
-                <option value="bogota">🏔️ Bogotá (Centro)</option>
-                <option value="medellin">🌆 Medellín (Antioquia)</option>
-            </select>
-            <span id="nodoStatus" class="status-badge">✅ Conectado</span>
-        </div>
+  <header>
+    <h1>🏥 Historia Clínica Distribuida</h1>
+    <div id="user-info">
+      <span id="username"></span>
+      <button id="logout-btn" onclick="logout()">Cerrar sesión</button>
     </div>
+  </header>
 
-    <div class="dashboard">
-        <!-- Módulo 1: Admisión -->
-        <div class="card">
-            <h2>📋 Módulo de Admisión</h2>
-            <form id="admissionForm">
-                <input type="text" id="nombre" placeholder="Nombre completo" required>
-                <input type="text" id="documento" placeholder="N° Documento" required>
-                <input type="date" id="fechaNacimiento">
-                <select id="sexo">
-                    <option value="male">Masculino</option>
-                    <option value="female">Femenino</option>
-                    <option value="other">Otro</option>
-                </select>
-                <button type="submit">Registrar Paciente</button>
-            </form>
-            <div id="admissionResult"></div>
-        </div>
+  <div id="login-section">
+    <h2>Iniciar sesión</h2>
+    <p>Usa uno de los usuarios de prueba:</p>
+    <ul>
+      <li><strong>Paciente:</strong> paciente1 / paciente123</li>
+      <li><strong>Admisionista:</strong> admision1 / admision123</li>
+      <li><strong>Médico:</strong> medico1 / medico123</li>
+      <li><strong>Auditor:</strong> auditor1 / auditor123</li>
+    </ul>
+    <button onclick="login()">Iniciar sesión con Keycloak</button>
+  </div>
 
-        <!-- Módulo 2: Triage -->
-        <div class="card">
-            <h2>🩺 Módulo de Triage</h2>
-            <form id="triageForm">
-                <input type="text" id="pacienteId" placeholder="ID del Paciente" required>
-                <input type="number" id="presionArterial" placeholder="Presión Arterial" step="5">
-                <input type="number" id="frecuenciaCardiaca" placeholder="Frecuencia Cardíaca">
-                <input type="number" id="temperatura" placeholder="Temperatura" step="0.1">
-                <select id="nivelDolor">
-                    <option value="1">Dolor leve (1)</option>
-                    <option value="3">Dolor moderado (3)</option>
-                    <option value="5">Dolor severo (5)</option>
-                    <option value="7">Dolor muy severo (7)</option>
-                    <option value="10">Dolor extremo (10)</option>
-                </select>
-                <button type="submit">Registrar Triage</button>
-            </form>
-            <div id="triageResult">
-                <div id="clasificacionTriage" class="triage-level"></div>
-            </div>
-        </div>
+  <main id="app-section" style="display:none;">
+    <!-- Vista Paciente -->
+    <section id="vista-paciente" class="vista" style="display:none;">
+      <h2>Mi Historia Clínica</h2>
+      <p>Consulta tu historia unificada de las 3 sedes.</p>
+      <button onclick="cargarMiHistoria()">Ver mi historia</button>
+      <button onclick="descargarBundle()">Descargar Bundle FHIR</button>
+      <div id="historia-paciente"></div>
+    </section>
 
-        <!-- Módulo 3: Médico -->
-        <div class="card">
-            <h2>👨‍⚕️ Módulo Médico</h2>
-            <form id="medicalForm">
-                <input type="text" id="pacienteIdMed" placeholder="ID del Paciente" required>
-                <input type="text" id="diagnostico" placeholder="Diagnóstico" required>
-                <input type="text" id="medicamento" placeholder="Medicamento">
-                <input type="text" id="dosis" placeholder="Dosis">
-                <button type="submit">Registrar Atención</button>
-            </form>
-            <div id="medicalResult"></div>
-        </div>
+    <!-- Vista Admisionista -->
+    <section id="vista-admisionista" class="vista" style="display:none;">
+      <h2>Admisión y Triage</h2>
+      <p>Buscar o registrar paciente, detectar duplicados, abrir atención con triage.</p>
+      <button onclick="listarPacientes()">Listar pacientes</button>
+      <div id="lista-pacientes"></div>
+      <h3>Estado de envío al bus</h3>
+      <div id="estado-bus"></div>
+    </section>
 
-        <!-- Módulo 4: Historia Clínica -->
-        <div class="card full-width">
-            <h2>📄 Historia Clínica Consolidada</h2>
-            <input type="text" id="buscarPaciente" placeholder="Buscar por documento o nombre" style="width: 300px;">
-            <button onclick="consultarHistoriaClinica()">Consultar</button>
-            <div id="historiaResult" class="historia-container"></div>
-        </div>
+    <!-- Vista Médico -->
+    <section id="vista-medico" class="vista" style="display:none;">
+      <h2>Historia Clínica (Médico)</h2>
+      <p>Consultar historia unificada, registrar diagnóstico CIE-10, prescribir, egreso.</p>
+      <button onclick="listarPacientes()">Listar pacientes</button>
+      <div id="lista-pacientes-medico"></div>
+      <h3>Registrar diagnóstico CIE-10</h3>
+      <input id="diag-patient" placeholder="Documento del paciente">
+      <input id="diag-code" placeholder="Código CIE-10 (ej. I10)">
+      <input id="diag-desc" placeholder="Descripción (ej. Hipertensión)">
+      <button onclick="registrarDiagnostico()">Registrar diagnóstico</button>
+      <div id="resultado-diagnostico"></div>
+    </section>
 
-        <!-- Módulo 5: Reportes -->
-        <div class="card full-width">
-            <h2>📊 Dashboard de Reportes</h2>
-            <div class="report-grid">
-                <div class="report-card">
-                    <h3>Pacientes por Nodo</h3>
-                    <canvas id="pacientesPorNodoChart" width="300" height="200"></canvas>
-                </div>
-                <div class="report-card">
-                    <h3>Diagnósticos Frecuentes</h3>
-                    <canvas id="diagnosticosChart" width="300" height="200"></canvas>
-                </div>
-                <div class="report-card">
-                    <h3>Tiempos de Atención</h3>
-                    <div id="tiemposAtencion"></div>
-                </div>
-            </div>
-            <button onclick="actualizarReportes()">🔄 Actualizar Reportes</button>
-        </div>
-    </div>
+    <!-- Vista Reporte de HC -->
+    <section id="vista-reporte" class="vista" style="display:none;">
+      <h2>Reporte de HC</h2>
+      <p>Reporte unificado por sede, sello de integridad, tablero de estado.</p>
+      <button onclick="cargarReporte()">Generar reporte</button>
+      <div id="reporte-contenido"></div>
+    </section>
+  </main>
 
-    <script src="app.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>

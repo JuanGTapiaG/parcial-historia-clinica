@@ -1,0 +1,85 @@
+services:
+  hapi-db:
+    image: postgres:14
+    container_name: hapi-db
+    environment:
+      POSTGRES_DB: hapi
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+    volumes:
+      - hapi-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d hapi"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - clinica-net
+
+  hapi-fhir:
+    image: hapiproject/hapi:latest
+    container_name: hapi-fhir
+    depends_on:
+      hapi-db:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./hapi-config:/data/hapi
+      - ./hapi-extra-classes:/app/extra-classes
+    environment:
+      SPRING_CONFIG_LOCATION: 'file:///data/hapi/application.yaml'
+      HAPI_FHIR_FHIR_VERSION: R4
+    networks:
+      - clinica-net
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    container_name: keycloak
+    command: start-dev --import-realm
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - "8081:8080"
+    volumes:
+      - ./keycloak/realm.json:/opt/keycloak/data/import/realm.json
+    networks:
+      - clinica-net
+
+  bus:
+    build:
+      context: ./bus
+      dockerfile: Dockerfile
+    container_name: bus
+    depends_on:
+      - hapi-fhir
+      - keycloak
+    ports:
+      - "8000:8000"
+    environment:
+      # Aquí el bus apunta a los nombres de los contenedores, no a localhost
+      - FHIR_URL=http://hapi-fhir:8080/fhir
+      - KEYCLOAK_URL=http://keycloak:8080
+      - FHIR_BASE_URL=http://hapi-fhir:8080/fhir
+    networks:
+      - clinica-net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - bus
+    networks:
+      - clinica-net
+
+volumes:
+  hapi-db-data:
+
+networks:
+  clinica-net:
+    driver: bridge
